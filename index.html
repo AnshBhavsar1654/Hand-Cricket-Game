@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Cricket Game</title>
+    <link rel="stylesheet" href="Game.css">
+</head>
+<body>
+    <h1>Hand Cricket Game</h1>
+    
+    <div class="choices">
+        <!-- Keep existing choice divs with images -->
+        <!-- Make sure your image filenames match -->
+        <div class="choice" id="zero"><img src="Zero.jpg"></div>
+        <div class="choice" id="one"><img src="One.jpg"></div>
+        <div class="choice" id="two"><img src="Two.jpg"></div>
+        <div class="choice" id="three"><img src="Three.jpg"></div>
+        <div class="choice" id="four"><img src="Four.jpg"></div>
+        <div class="choice" id="five"><img src="Five.jpg"></div>
+        <div class="choice" id="six"><img src="Six.jpg"></div>
+    </div>
+
+    <div class="score-board">
+        <div class="score">
+            <div>Your Score</div>
+            <div id="score">0</div>
+        </div>
+        <div class="score">
+            <div>Computer's Choice</div>
+            <div id="computer-choice"></div>
+        </div>
+        <div class="score">
+            <div>Best Score</div>
+            <div id="best-score">0</div>
+        </div>
+    </div>
+
+    <div id="message">Tap a number to start playing!</div>
+
+    <script src="app.js"></script>
+</body>
+</html>
