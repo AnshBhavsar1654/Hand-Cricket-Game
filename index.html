@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,19 +7,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        const savedTheme = localStorage.getItem('hc-theme');
+        if (savedTheme === 'light' || (!savedTheme && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
                         ink: { 950: '#0e1015', 900: '#14161d', 800: '#1a1d26', 700: '#232734' },
-                        you: { DEFAULT: '#a5b4fc', deep: '#4f46e5' },
-                        cpu: { DEFAULT: '#f9a8b4', deep: '#be123c' }
+                        you: { DEFAULT: '#6366f1', soft: '#a5b4fc' },
+                        cpu: { DEFAULT: '#f43f5e', soft: '#fda4af' }
                     },
                     boxShadow: {
-                        card: '0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.25)'
+                        card: '0 1px 2px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08)',
+                        'card-dark': '0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.25)'
                     },
                     animation: {
                         'pop-in': 'popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
@@ -53,11 +61,23 @@
         .hand-bob { animation: bob 0.5s ease-in-out 2; }
     </style>
 </head>
-<body class="min-h-screen bg-ink-950 text-slate-200 font-sans antialiased flex flex-col items-center px-4 py-10 sm:py-14 selection:bg-you/30">
+<body class="min-h-screen bg-slate-100 text-slate-700 font-sans antialiased flex flex-col items-center px-4 py-10 sm:py-14 selection:bg-you/20 dark:bg-ink-950 dark:text-slate-200 dark:selection:bg-you/30 transition-colors duration-300">
+
+    <!-- Theme toggle -->
+    <button type="button" id="theme-toggle" aria-label="Toggle dark mode"
+            class="fixed top-4 right-4 z-20 p-2.5 rounded-full border border-slate-200 bg-white text-slate-500 cursor-pointer transition-all duration-200 hover:border-slate-300 hover:text-slate-800 active:scale-90 dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:border-white/20 dark:hover:text-white">
+        <svg id="icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg id="icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+    </button>
 
     <!-- Header -->
     <header class="text-center mb-8 sm:mb-10">
-        <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Hand Cricket</h1>
+        <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">Hand Cricket</h1>
         <p class="mt-1.5 text-sm text-slate-500">Match the computer's number and you're out.</p>
     </header>
 
@@ -65,24 +85,24 @@
 
         <!-- Stats -->
         <section class="grid grid-cols-3 gap-3" aria-label="Stats">
-            <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
+            <div class="rounded-2xl bg-white border border-slate-200 px-4 py-3.5 text-center shadow-card dark:bg-ink-900 dark:border-white/[0.06] dark:shadow-card-dark transition-colors duration-300">
                 <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Score</div>
-                <div id="score" class="mt-0.5 text-3xl font-semibold text-white tabular-nums">0</div>
+                <div id="score" class="mt-0.5 text-3xl font-semibold text-slate-900 tabular-nums dark:text-white">0</div>
             </div>
-            <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
+            <div class="rounded-2xl bg-white border border-slate-200 px-4 py-3.5 text-center shadow-card dark:bg-ink-900 dark:border-white/[0.06] dark:shadow-card-dark transition-colors duration-300">
                 <div id="ball-label" class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Ball 1</div>
                 <div id="last-ball" class="mt-0.5 text-3xl font-semibold text-slate-400 tabular-nums">–</div>
             </div>
-            <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
+            <div class="rounded-2xl bg-white border border-slate-200 px-4 py-3.5 text-center shadow-card dark:bg-ink-900 dark:border-white/[0.06] dark:shadow-card-dark transition-colors duration-300">
                 <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Best</div>
-                <div id="best-score" class="mt-0.5 text-3xl font-semibold text-white tabular-nums">0</div>
+                <div id="best-score" class="mt-0.5 text-3xl font-semibold text-slate-900 tabular-nums dark:text-white">0</div>
             </div>
         </section>
 
         <!-- Arena -->
-        <section class="relative rounded-3xl bg-ink-900 border border-white/[0.06] shadow-card p-6 sm:p-8 overflow-hidden" aria-label="Arena">
+        <section class="relative rounded-3xl bg-white border border-slate-200 shadow-card p-6 sm:p-8 overflow-hidden dark:bg-ink-900 dark:border-white/[0.06] dark:shadow-card-dark transition-colors duration-300" aria-label="Arena">
             <span id="status-chip"
-                  class="absolute left-1/2 top-4 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-widest text-slate-500 bg-ink-800 border border-white/[0.06] rounded-full px-3 py-1 transition-colors duration-300">
+                  class="absolute left-1/2 top-4 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-widest text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-3 py-1 transition-colors duration-300 dark:bg-ink-800 dark:border-white/[0.06]">
                 Ready
             </span>
 
@@ -90,26 +110,26 @@
 
                 <!-- Player -->
                 <div class="flex flex-col items-center gap-3">
-                    <div class="text-[11px] font-semibold uppercase tracking-widest text-you/80">You</div>
+                    <div class="text-[11px] font-semibold uppercase tracking-widest text-you">You</div>
                     <div class="h-36 sm:h-48 flex items-end justify-center">
                         <div id="player-hand-wrap" class="animate-rise">
                             <img id="player-hand" src="Zero.jpg" alt="Your hand"
-                                 class="w-24 sm:w-32 rounded-2xl bg-white p-1 shadow-card -rotate-2 pointer-events-none select-none">
+                                 class="w-24 sm:w-32 rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-1 shadow-card -rotate-2 pointer-events-none select-none dark:bg-white dark:ring-transparent">
                         </div>
                     </div>
                     <div id="player-num" class="text-xl sm:text-2xl font-semibold text-you tabular-nums min-h-[1.5em]">–</div>
                 </div>
 
                 <!-- Divider -->
-                <div class="absolute left-1/2 top-10 bottom-8 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent pointer-events-none" aria-hidden="true"></div>
+                <div class="absolute left-1/2 top-10 bottom-8 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent pointer-events-none dark:via-white/10" aria-hidden="true"></div>
 
                 <!-- CPU -->
                 <div class="flex flex-col items-center gap-3">
-                    <div class="text-[11px] font-semibold uppercase tracking-widest text-cpu/80">Computer</div>
+                    <div class="text-[11px] font-semibold uppercase tracking-widest text-cpu">Computer</div>
                     <div class="h-36 sm:h-48 flex items-end justify-center">
                         <div id="cpu-hand-wrap" class="-scale-x-100 animate-rise">
                             <img id="cpu-hand" src="Zero.jpg" alt="Computer's hand"
-                                 class="w-24 sm:w-32 rounded-2xl bg-white p-1 shadow-card rotate-2 pointer-events-none select-none">
+                                 class="w-24 sm:w-32 rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-1 shadow-card rotate-2 pointer-events-none select-none dark:bg-white dark:ring-transparent">
                         </div>
                     </div>
                     <div id="cpu-num" class="text-xl sm:text-2xl font-semibold text-cpu tabular-nums min-h-[1.5em]">–</div>
@@ -119,7 +139,7 @@
 
         <!-- Message -->
         <p id="message" role="status" aria-live="polite"
-           class="text-center text-sm sm:text-base text-slate-400 min-h-[1.5em] transition-colors duration-300">
+           class="text-center text-sm sm:text-base text-slate-500 min-h-[1.5em] transition-colors duration-300">
             Pick a number to begin your innings.
         </p>
 
@@ -132,22 +152,33 @@
         <section aria-label="Choose a number">
             <div id="controls" class="grid grid-cols-7 gap-2 sm:gap-2.5 max-w-md mx-auto">
                 <button type="button" data-value="0" aria-label="Play zero"
-                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">0</button>
+                        class="num-btn aspect-square rounded-full border border-slate-200 bg-white text-base sm:text-lg font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-slate-900 hover:bg-you/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-90 disabled:opacity-30 disabled:pointer-events-none dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:text-white dark:hover:bg-you/10">0</button>
                 <button type="button" data-value="1" aria-label="Play one"
-                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">1</button>
+                        class="num-btn aspect-square rounded-full border border-slate-200 bg-white text-base sm:text-lg font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-slate-900 hover:bg-you/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-90 disabled:opacity-30 disabled:pointer-events-none dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:text-white dark:hover:bg-you/10">1</button>
                 <button type="button" data-value="2" aria-label="Play two"
-                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">2</button>
+                        class="num-btn aspect-square rounded-full border border-slate-200 bg-white text-base sm:text-lg font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-slate-900 hover:bg-you/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-90 disabled:opacity-30 disabled:pointer-events-none dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:text-white dark:hover:bg-you/10">2</button>
                 <button type="button" data-value="3" aria-label="Play three"
-                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">3</button>
+                        class="num-btn aspect-square rounded-full border border-slate-200 bg-white text-base sm:text-lg font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-slate-900 hover:bg-you/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-90 disabled:opacity-30 disabled:pointer-events-none dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:text-white dark:hover:bg-you/10">3</button>
                 <button type="button" data-value="4" aria-label="Play four"
-                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">4</button>
+                        class="num-btn aspect-square rounded-full border border-slate-200 bg-white text-base sm:text-lg font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-slate-900 hover:bg-you/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-90 disabled:opacity-30 disabled:pointer-events-none dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:text-white dark:hover:bg-you/10">4</button>
                 <button type="button" data-value="5" aria-label="Play five"
-                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">5</button>
+                        class="num-btn aspect-square rounded-full border border-slate-200 bg-white text-base sm:text-lg font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-slate-900 hover:bg-you/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-90 disabled:opacity-30 disabled:pointer-events-none dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:text-white dark:hover:bg-you/10">5</button>
                 <button type="button" data-value="6" aria-label="Play six"
-                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">6</button>
+                        class="num-btn aspect-square rounded-full border border-slate-200 bg-white text-base sm:text-lg font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-slate-900 hover:bg-you/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-90 disabled:opacity-30 disabled:pointer-events-none dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:text-white dark:hover:bg-you/10">6</button>
             </div>
-            <footer class="mt-5 text-xs text-slate-600 text-center">
-                You can also use keys 0 – 6
+
+            <div class="mt-5 flex items-center justify-center gap-4">
+                <button type="button" id="reset-game"
+                        class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cpu/40 active:scale-95 dark:border-white/10 dark:bg-ink-800 dark:text-slate-400 dark:hover:border-cpu/40 dark:hover:text-cpu dark:hover:bg-cpu/10">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+                    </svg>
+                    Reset Game
+                </button>
+            </div>
+
+            <footer class="mt-4 text-xs text-slate-400 dark:text-slate-600 text-center">
+                Keys 0 – 6 to play · R to reset · T to toggle theme
             </footer>
         </section>
     </main>

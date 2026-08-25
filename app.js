@@ -2,6 +2,7 @@ let score = 0;
 let ball = 0;
 let isGameActive = true;
 let isAnimating = false;
+let gameOverTimer = null;
 let bestScore = localStorage.getItem('bestScore') || 0;
 let history = [];
 
@@ -19,6 +20,10 @@ const playerNum = document.querySelector("#player-num");
 const cpuNum = document.querySelector("#cpu-num");
 const controls = document.querySelector("#controls");
 const historyElement = document.querySelector("#history");
+const themeToggle = document.querySelector("#theme-toggle");
+const iconMoon = document.querySelector("#icon-moon");
+const iconSun = document.querySelector("#icon-sun");
+const resetButton = document.querySelector("#reset-game");
 
 const IMAGE_MAP = {
     0: "Zero.jpg",
@@ -31,6 +36,28 @@ const IMAGE_MAP = {
 };
 
 Object.values(IMAGE_MAP).forEach(src => { new Image().src = src; });
+
+/* ---------- Theme ---------- */
+
+const applyThemeIcons = () => {
+    const isDark = document.documentElement.classList.contains("dark");
+    iconMoon.classList.toggle("hidden", !isDark);
+    iconSun.classList.toggle("hidden", isDark);
+};
+
+const setTheme = (dark) => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem('hc-theme', dark ? 'dark' : 'light');
+    applyThemeIcons();
+};
+
+themeToggle.addEventListener("click", () => {
+    setTheme(!document.documentElement.classList.contains("dark"));
+});
+
+applyThemeIcons();
+
+/* ---------- Game helpers ---------- */
 
 const setHandImage = (img, value) => {
     img.src = IMAGE_MAP[value];
@@ -46,16 +73,23 @@ const setMessage = (text) => {
     msgElement.textContent = text;
 };
 
-const setStatusChip = (text, accentClass = "") => {
+const CHIP_BASE = "absolute left-1/2 top-4 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-widest rounded-full px-3 py-1 transition-colors duration-300 border";
+const CHIP_STYLES = {
+    idle: `${CHIP_BASE} bg-slate-100 border-slate-200 text-slate-500 dark:bg-ink-800 dark:border-white/[0.06]`,
+    playing: `${CHIP_BASE} bg-indigo-50 border-indigo-200 text-you dark:bg-you/10 dark:border-you/20`,
+    out: `${CHIP_BASE} bg-rose-50 border-rose-200 text-cpu dark:bg-cpu/10 dark:border-cpu/20`
+};
+
+const setStatusChip = (text, style = "idle") => {
     statusChip.textContent = text;
-    statusChip.className =
-        "absolute left-1/2 top-4 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-widest rounded-full px-3 py-1 transition-colors duration-300 bg-ink-800 border border-white/[0.06] " +
-        (accentClass || "text-slate-500");
+    statusChip.className = CHIP_STYLES[style];
 };
 
 const renderHistory = () => {
     historyElement.innerHTML = history
-        .map(h => `<span class="text-xs font-medium tabular-nums rounded-full px-2.5 py-1 border ${h.out ? "border-cpu/30 bg-cpu/10 text-cpu" : "border-white/10 bg-ink-800 text-slate-400"} animate-rise">${h.out ? "OUT" : `+${h.runs}`}</span>`)
+        .map(h => h.out
+            ? `<span class="text-xs font-medium rounded-full px-2.5 py-1 border bg-rose-50 border-rose-200 text-cpu animate-rise dark:bg-cpu/10 dark:border-cpu/20">OUT</span>`
+            : `<span class="text-xs font-medium tabular-nums rounded-full px-2.5 py-1 border bg-white border-slate-200 text-slate-500 animate-rise dark:bg-ink-800 dark:border-white/10 dark:text-slate-400">+${h.runs}</span>`)
         .join("");
 };
 
@@ -73,10 +107,17 @@ const updateBestScore = () => {
     }
 };
 
-const resetRound = () => {
+const resetGame = () => {
+    if (isAnimating) return;
+
+    clearTimeout(gameOverTimer);
+    document.body.classList.remove("animate-shake");
+
     score = 0;
     ball = 0;
     history = [];
+    isGameActive = true;
+
     scoreElement.textContent = "0";
     ballLabelElement.textContent = "Ball 1";
     lastBallElement.textContent = "–";
@@ -88,22 +129,23 @@ const resetRound = () => {
     historyElement.innerHTML = "";
     setStatusChip("Ready");
     setMessage("Pick a number to begin your innings.");
+    setControlsEnabled(true);
 };
+
+resetButton.addEventListener("click", resetGame);
 
 const handleGameOver = () => {
     isGameActive = false;
     ballLabelElement.textContent = "Innings";
     lastBallElement.textContent = "OUT";
     lastBallElement.className = "mt-0.5 text-3xl font-semibold text-cpu tabular-nums animate-pop-in";
-    setStatusChip("Out", "text-cpu border-cpu/20");
+    setStatusChip("Out", "out");
     setMessage(`Out! You scored ${score}. Pick a number to start a new innings.`);
     document.body.classList.add("animate-shake");
 
-    setTimeout(() => {
+    gameOverTimer = setTimeout(() => {
         document.body.classList.remove("animate-shake");
-        resetRound();
-        isGameActive = true;
-        setControlsEnabled(true);
+        resetGame();
     }, 2200);
 };
 
@@ -121,7 +163,7 @@ const playGame = (userChoice) => {
     cpuNum.textContent = "?";
     setHandImage(playerHand, 0);
     setHandImage(cpuHand, 0);
-    setStatusChip("Ball " + ball);
+    setStatusChip("Ball " + ball, "playing");
     setMessage("Hands up…");
 
     playerHandWrap.classList.add("hand-bob");
@@ -158,13 +200,11 @@ const playGame = (userChoice) => {
         ballLabelElement.textContent = "Ball " + (ball + 1);
         if (userChoice > 0) {
             lastBallElement.textContent = `+${userChoice}`;
-            lastBallElement.className = "mt-0.5 text-3xl font-semibold text-white tabular-nums animate-pop-in";
-            setStatusChip("Playing", "text-you border-you/20");
+            lastBallElement.className = "mt-0.5 text-3xl font-semibold text-slate-900 tabular-nums animate-pop-in dark:text-white";
             setMessage(`${userChoice} run${userChoice > 1 ? "s" : ""}. Score: ${score}`);
         } else {
             lastBallElement.textContent = "0";
-            lastBallElement.className = "mt-0.5 text-3xl font-semibold text-slate-500 tabular-nums animate-pop-in";
-            setStatusChip("Playing", "text-you border-you/20");
+            lastBallElement.className = "mt-0.5 text-3xl font-semibold text-slate-400 tabular-nums animate-pop-in";
             setMessage("Dot ball.");
         }
 
@@ -178,8 +218,11 @@ controls.querySelectorAll("button").forEach(btn => {
 });
 
 document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
     if (e.key >= "0" && e.key <= "6") playGame(Number(e.key));
+    else if (e.key.toLowerCase() === "r") resetGame();
+    else if (e.key.toLowerCase() === "t") themeToggle.click();
 });
 
 bestScoreElement.textContent = bestScore;
-resetRound();
+resetGame();
