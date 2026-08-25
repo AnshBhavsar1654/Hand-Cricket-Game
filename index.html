@@ -3,40 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hand Cricket Game</title>
-    <link rel="stylesheet" href="Game.css">
+    <title>Hand Cricket</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        ink: { 950: '#0e1015', 900: '#14161d', 800: '#1a1d26', 700: '#232734' },
+                        you: { DEFAULT: '#a5b4fc', deep: '#4f46e5' },
+                        cpu: { DEFAULT: '#f9a8b4', deep: '#be123c' }
+                    },
+                    boxShadow: {
+                        card: '0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.25)'
+                    },
+                    animation: {
+                        'pop-in': 'popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        'shake': 'shake 0.4s ease-in-out'
+                    },
+                    keyframes: {
+                        popIn: {
+                            '0%': { transform: 'scale(0.6)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' }
+                        },
+                        shake: {
+                            '0%, 100%': { transform: 'translateX(0)' },
+                            '25%': { transform: 'translateX(-8px)' },
+                            '75%': { transform: 'translateX(8px)' }
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        @keyframes bob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+        .hand-bob { animation: bob 0.5s ease-in-out 2; }
+    </style>
 </head>
-<body>
-    <h1>Hand Cricket Game</h1>
-    
-    <div class="choices">
-        <!-- Keep existing choice divs with images -->
-        <!-- Make sure your image filenames match -->
-        <div class="choice" id="zero"><img src="Zero.jpg"></div>
-        <div class="choice" id="one"><img src="One.jpg"></div>
-        <div class="choice" id="two"><img src="Two.jpg"></div>
-        <div class="choice" id="three"><img src="Three.jpg"></div>
-        <div class="choice" id="four"><img src="Four.jpg"></div>
-        <div class="choice" id="five"><img src="Five.jpg"></div>
-        <div class="choice" id="six"><img src="Six.jpg"></div>
-    </div>
+<body class="min-h-screen bg-ink-950 text-slate-200 font-sans antialiased flex flex-col items-center px-4 py-10 sm:py-14 selection:bg-you/30">
 
-    <div class="score-board">
-        <div class="score">
-            <div>Your Score</div>
-            <div id="score">0</div>
-        </div>
-        <div class="score">
-            <div>Computer's Choice</div>
-            <div id="computer-choice"></div>
-        </div>
-        <div class="score">
-            <div>Best Score</div>
-            <div id="best-score">0</div>
-        </div>
-    </div>
+    <!-- Header -->
+    <header class="text-center mb-8 sm:mb-10">
+        <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Hand Cricket</h1>
+        <p class="mt-1.5 text-sm text-slate-500">Match the computer's number and you're out.</p>
+    </header>
 
-    <div id="message">Tap a number to start playing!</div>
+    <main class="w-full max-w-2xl flex flex-col gap-5">
+
+        <!-- Stats -->
+        <section class="grid grid-cols-3 gap-3" aria-label="Stats">
+            <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
+                <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Score</div>
+                <div id="score" class="mt-0.5 text-3xl font-semibold text-white tabular-nums">0</div>
+            </div>
+            <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
+                <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Last Ball</div>
+                <div id="last-ball" class="mt-0.5 text-3xl font-semibold text-slate-400 tabular-nums">–</div>
+            </div>
+            <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
+                <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Best</div>
+                <div id="best-score" class="mt-0.5 text-3xl font-semibold text-white tabular-nums">0</div>
+            </div>
+        </section>
+
+        <!-- Arena -->
+        <section class="relative rounded-3xl bg-ink-900 border border-white/[0.06] shadow-card p-6 sm:p-8 overflow-hidden" aria-label="Arena">
+            <div class="grid grid-cols-2 gap-4 items-end">
+
+                <!-- Player -->
+                <div class="flex flex-col items-center gap-3">
+                    <div class="text-[11px] font-semibold uppercase tracking-widest text-you/80">You</div>
+                    <div class="h-40 sm:h-56 flex items-end justify-center">
+                        <div id="player-hand-wrap"><div id="player-hand" class="w-28 sm:w-40"></div></div>
+                    </div>
+                    <div id="player-num" class="text-xl sm:text-2xl font-semibold text-you tabular-nums min-h-[1.5em]">–</div>
+                </div>
+
+                <!-- Divider -->
+                <div class="absolute left-1/2 top-8 bottom-8 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent pointer-events-none" aria-hidden="true"></div>
+
+                <!-- CPU -->
+                <div class="flex flex-col items-center gap-3">
+                    <div class="text-[11px] font-semibold uppercase tracking-widest text-cpu/80">Computer</div>
+                    <div class="h-40 sm:h-56 flex items-end justify-center">
+                        <div id="cpu-hand-wrap" class="-scale-x-100"><div id="cpu-hand" class="w-28 sm:w-40"></div></div>
+                    </div>
+                    <div id="cpu-num" class="text-xl sm:text-2xl font-semibold text-cpu tabular-nums min-h-[1.5em]">–</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Message -->
+        <p id="message" role="status" aria-live="polite"
+           class="text-center text-sm sm:text-base text-slate-400 min-h-[1.5em] transition-colors duration-300">
+            Pick a number to begin your innings.
+        </p>
+
+        <!-- Controls -->
+        <section aria-label="Choose a number">
+            <div id="controls" class="grid grid-cols-7 gap-2 sm:gap-2.5 max-w-md mx-auto">
+                <button type="button" data-value="0" aria-label="Play zero"
+                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">0</button>
+                <button type="button" data-value="1" aria-label="Play one"
+                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">1</button>
+                <button type="button" data-value="2" aria-label="Play two"
+                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">2</button>
+                <button type="button" data-value="3" aria-label="Play three"
+                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">3</button>
+                <button type="button" data-value="4" aria-label="Play four"
+                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">4</button>
+                <button type="button" data-value="5" aria-label="Play five"
+                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">5</button>
+                <button type="button" data-value="6" aria-label="Play six"
+                        class="num-btn aspect-square rounded-full border border-white/10 bg-ink-800 text-base sm:text-lg font-medium text-slate-400 cursor-pointer transition-all duration-200 hover:border-you/50 hover:text-white hover:bg-you/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/60 active:scale-90 disabled:opacity-30 disabled:pointer-events-none">6</button>
+            </div>
+            <footer class="mt-5 text-xs text-slate-600 text-center">
+                You can also use keys 0 – 6
+            </footer>
+        </section>
+    </main>
 
     <script src="app.js"></script>
 </body>
