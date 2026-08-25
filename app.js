@@ -1,73 +1,62 @@
 let score = 0;
+let ball = 0;
 let isGameActive = true;
 let isAnimating = false;
 let bestScore = localStorage.getItem('bestScore') || 0;
+let history = [];
 
 const msgElement = document.querySelector("#message");
 const scoreElement = document.querySelector("#score");
 const lastBallElement = document.querySelector("#last-ball");
+const ballLabelElement = document.querySelector("#ball-label");
 const bestScoreElement = document.querySelector("#best-score");
+const statusChip = document.querySelector("#status-chip");
 const playerHand = document.querySelector("#player-hand");
 const cpuHand = document.querySelector("#cpu-hand");
+const playerHandWrap = document.querySelector("#player-hand-wrap");
+const cpuHandWrap = document.querySelector("#cpu-hand-wrap");
 const playerNum = document.querySelector("#player-num");
 const cpuNum = document.querySelector("#cpu-num");
 const controls = document.querySelector("#controls");
+const historyElement = document.querySelector("#history");
 
-const HAND_COLORS = {
-    player: { base: '#c7d2fe', dark: '#4f46e5', stroke: '#818cf8' },
-    cpu: { base: '#fecdd3', dark: '#be123c', stroke: '#fb7185' }
+const IMAGE_MAP = {
+    0: "Zero.jpg",
+    1: "One.jpg",
+    2: "Two.jpg",
+    3: "Three.jpg",
+    4: "Four.jpg",
+    5: "Five.jpg",
+    6: "Six.jpg"
 };
 
-const FINGER_X = [56, 78, 100, 122];
-const UP_Y = 52;
-const UP_H = 120;
-const FOLD_Y = 136;
-const FOLD_H = 34;
+Object.values(IMAGE_MAP).forEach(src => { new Image().src = src; });
 
-const handSVG = (side, count) => {
-    const c = HAND_COLORS[side];
-    const id = `grad-${side}-${count}`;
-    const ups = [0, 0, 0, 0];
-    for (let i = 0; i < Math.min(count, 4); i++) ups[i] = 1;
-    const thumbOut = count >= 5;
-
-    const fingers = FINGER_X.map((x, i) => ups[i]
-        ? `<rect x="${x}" y="${UP_Y}" width="20" height="${UP_H}" rx="10" fill="url(#${id})" stroke="${c.stroke}" stroke-width="2"/>`
-        : `<rect x="${x}" y="${FOLD_Y}" width="20" height="${FOLD_H}" rx="12" fill="url(#${id})" stroke="${c.dark}" stroke-width="2" opacity="0.85"/>`
-    ).join('');
-
-    const thumb = thumbOut
-        ? `<rect x="-12" y="92" width="22" height="70" rx="11" fill="url(#${id})" stroke="${c.stroke}" stroke-width="2" transform="rotate(-40 -1 127)"/>`
-        : `<rect x="34" y="164" width="26" height="44" rx="13" fill="url(#${id})" stroke="${c.dark}" stroke-width="2" opacity="0.85"/>`;
-
-    return `
-        <svg viewBox="-25 30 255 245" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto">
-            <defs>
-                <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stop-color="${c.base}"/>
-                    <stop offset="1" stop-color="${c.dark}"/>
-                </linearGradient>
-            </defs>
-            ${thumb}
-            ${fingers}
-            <rect x="54" y="148" width="94" height="92" rx="30" fill="url(#${id})" stroke="${c.stroke}" stroke-width="2"/>
-            <rect x="82" y="230" width="40" height="45" rx="14" fill="url(#${id})"/>
-            <rect x="72" y="176" width="58" height="14" rx="7" fill="rgba(14,16,21,0.25)"/>
-        </svg>`;
+const setHandImage = (img, value) => {
+    img.src = IMAGE_MAP[value];
 };
 
-const renderHand = (element, side, count) => {
-    element.innerHTML = handSVG(side, count);
-};
-
-const popReveal = (element) => {
-    element.classList.remove("animate-pop-in");
+const replayAnimation = (element, className) => {
+    element.classList.remove(className);
     void element.offsetWidth;
-    element.classList.add("animate-pop-in");
+    element.classList.add(className);
 };
 
 const setMessage = (text) => {
     msgElement.textContent = text;
+};
+
+const setStatusChip = (text, accentClass = "") => {
+    statusChip.textContent = text;
+    statusChip.className =
+        "absolute left-1/2 top-4 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-widest rounded-full px-3 py-1 transition-colors duration-300 bg-ink-800 border border-white/[0.06] " +
+        (accentClass || "text-slate-500");
+};
+
+const renderHistory = () => {
+    historyElement.innerHTML = history
+        .map(h => `<span class="text-xs font-medium tabular-nums rounded-full px-2.5 py-1 border ${h.out ? "border-cpu/30 bg-cpu/10 text-cpu" : "border-white/10 bg-ink-800 text-slate-400"} animate-rise">${h.out ? "OUT" : `+${h.runs}`}</span>`)
+        .join("");
 };
 
 const setControlsEnabled = (enabled) => {
@@ -84,25 +73,30 @@ const updateBestScore = () => {
     }
 };
 
-const setLastBall = (text, colorClass) => {
-    lastBallElement.textContent = text;
-    lastBallElement.className = `mt-0.5 text-3xl font-semibold tabular-nums ${colorClass} animate-pop-in`;
-};
-
 const resetRound = () => {
     score = 0;
+    ball = 0;
+    history = [];
     scoreElement.textContent = "0";
+    ballLabelElement.textContent = "Ball 1";
+    lastBallElement.textContent = "–";
+    lastBallElement.className = "mt-0.5 text-3xl font-semibold text-slate-400 tabular-nums";
     playerNum.textContent = "–";
     cpuNum.textContent = "–";
-    renderHand(playerHand, "player", 0);
-    renderHand(cpuHand, "cpu", 0);
+    setHandImage(playerHand, 0);
+    setHandImage(cpuHand, 0);
+    historyElement.innerHTML = "";
+    setStatusChip("Ready");
     setMessage("Pick a number to begin your innings.");
 };
 
 const handleGameOver = () => {
     isGameActive = false;
-    setLastBall("OUT", "text-cpu");
-    setMessage(`Out! You scored ${score}. Pick a number to start again.`);
+    ballLabelElement.textContent = "Innings";
+    lastBallElement.textContent = "OUT";
+    lastBallElement.className = "mt-0.5 text-3xl font-semibold text-cpu tabular-nums animate-pop-in";
+    setStatusChip("Out", "text-cpu border-cpu/20");
+    setMessage(`Out! You scored ${score}. Pick a number to start a new innings.`);
     document.body.classList.add("animate-shake");
 
     setTimeout(() => {
@@ -110,7 +104,7 @@ const handleGameOver = () => {
         resetRound();
         isGameActive = true;
         setControlsEnabled(true);
-    }, 2000);
+    }, 2200);
 };
 
 const getComputerChoice = () => Math.floor(Math.random() * 7);
@@ -121,48 +115,61 @@ const playGame = (userChoice) => {
     setControlsEnabled(false);
 
     const cpuChoice = getComputerChoice();
+    ball += 1;
 
     playerNum.textContent = "?";
     cpuNum.textContent = "?";
+    setHandImage(playerHand, 0);
+    setHandImage(cpuHand, 0);
+    setStatusChip("Ball " + ball);
     setMessage("Hands up…");
 
-    renderHand(playerHand, "player", 0);
-    renderHand(cpuHand, "cpu", 0);
-    playerHand.classList.add("hand-bob");
-    cpuHand.classList.add("hand-bob");
+    playerHandWrap.classList.add("hand-bob");
+    cpuHandWrap.classList.add("hand-bob");
 
     setTimeout(() => {
-        playerHand.classList.remove("hand-bob");
-        cpuHand.classList.remove("hand-bob");
+        playerHandWrap.classList.remove("hand-bob");
+        cpuHandWrap.classList.remove("hand-bob");
 
-        renderHand(playerHand, "player", userChoice);
-        renderHand(cpuHand, "cpu", cpuChoice);
-        popReveal(playerHand);
-        popReveal(cpuHand);
+        setHandImage(playerHand, userChoice);
+        setHandImage(cpuHand, cpuChoice);
+        replayAnimation(playerHandWrap, "animate-pop-in");
+        replayAnimation(cpuHandWrap, "animate-pop-in");
         playerNum.textContent = userChoice;
         cpuNum.textContent = cpuChoice;
 
-        if (userChoice === cpuChoice) {
+        const out = userChoice === cpuChoice;
+
+        history.push({ runs: userChoice, out });
+        if (history.length > 8) history.shift();
+        renderHistory();
+
+        if (out) {
             updateBestScore();
             handleGameOver();
-        } else {
-            score += userChoice;
-            scoreElement.textContent = score;
-            updateBestScore();
+            return;
+        }
 
-            setLastBall(
-                userChoice > 0 ? `+${userChoice}` : "0",
-                userChoice > 0 ? "text-white" : "text-slate-500"
-            );
-            setMessage(
-                userChoice > 0
-                    ? `${userChoice} run${userChoice > 1 ? "s" : ""}. Score: ${score}`
-                    : "Dot ball."
-            );
+        score += userChoice;
+        scoreElement.textContent = score;
+        replayAnimation(scoreElement.parentElement, "animate-rise");
+        updateBestScore();
+
+        ballLabelElement.textContent = "Ball " + (ball + 1);
+        if (userChoice > 0) {
+            lastBallElement.textContent = `+${userChoice}`;
+            lastBallElement.className = "mt-0.5 text-3xl font-semibold text-white tabular-nums animate-pop-in";
+            setStatusChip("Playing", "text-you border-you/20");
+            setMessage(`${userChoice} run${userChoice > 1 ? "s" : ""}. Score: ${score}`);
+        } else {
+            lastBallElement.textContent = "0";
+            lastBallElement.className = "mt-0.5 text-3xl font-semibold text-slate-500 tabular-nums animate-pop-in";
+            setStatusChip("Playing", "text-you border-you/20");
+            setMessage("Dot ball.");
         }
 
         isAnimating = false;
-        if (isGameActive) setControlsEnabled(true);
+        setControlsEnabled(true);
     }, 1050);
 };
 

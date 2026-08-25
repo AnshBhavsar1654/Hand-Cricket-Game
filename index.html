@@ -23,12 +23,17 @@
                     },
                     animation: {
                         'pop-in': 'popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                        'shake': 'shake 0.4s ease-in-out'
+                        'shake': 'shake 0.4s ease-in-out',
+                        'rise': 'rise 0.3s ease-out'
                     },
                     keyframes: {
                         popIn: {
-                            '0%': { transform: 'scale(0.6)', opacity: '0' },
+                            '0%': { transform: 'scale(0.7)', opacity: '0' },
                             '100%': { transform: 'scale(1)', opacity: '1' }
+                        },
+                        rise: {
+                            '0%': { transform: 'translateY(8px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
                         },
                         shake: {
                             '0%, 100%': { transform: 'translateX(0)' },
@@ -43,7 +48,7 @@
     <style>
         @keyframes bob {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-30px); }
+            50% { transform: translateY(-28px); }
         }
         .hand-bob { animation: bob 0.5s ease-in-out 2; }
     </style>
@@ -65,7 +70,7 @@
                 <div id="score" class="mt-0.5 text-3xl font-semibold text-white tabular-nums">0</div>
             </div>
             <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
-                <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Last Ball</div>
+                <div id="ball-label" class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Ball 1</div>
                 <div id="last-ball" class="mt-0.5 text-3xl font-semibold text-slate-400 tabular-nums">–</div>
             </div>
             <div class="rounded-2xl bg-ink-900 border border-white/[0.06] px-4 py-3.5 text-center shadow-card">
@@ -76,25 +81,36 @@
 
         <!-- Arena -->
         <section class="relative rounded-3xl bg-ink-900 border border-white/[0.06] shadow-card p-6 sm:p-8 overflow-hidden" aria-label="Arena">
-            <div class="grid grid-cols-2 gap-4 items-end">
+            <span id="status-chip"
+                  class="absolute left-1/2 top-4 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-widest text-slate-500 bg-ink-800 border border-white/[0.06] rounded-full px-3 py-1 transition-colors duration-300">
+                Ready
+            </span>
+
+            <div class="grid grid-cols-2 gap-4 items-end mt-4">
 
                 <!-- Player -->
                 <div class="flex flex-col items-center gap-3">
                     <div class="text-[11px] font-semibold uppercase tracking-widest text-you/80">You</div>
-                    <div class="h-40 sm:h-56 flex items-end justify-center">
-                        <div id="player-hand-wrap"><div id="player-hand" class="w-28 sm:w-40"></div></div>
+                    <div class="h-36 sm:h-48 flex items-end justify-center">
+                        <div id="player-hand-wrap" class="animate-rise">
+                            <img id="player-hand" src="Zero.jpg" alt="Your hand"
+                                 class="w-24 sm:w-32 rounded-2xl bg-white p-1 shadow-card -rotate-2 pointer-events-none select-none">
+                        </div>
                     </div>
                     <div id="player-num" class="text-xl sm:text-2xl font-semibold text-you tabular-nums min-h-[1.5em]">–</div>
                 </div>
 
                 <!-- Divider -->
-                <div class="absolute left-1/2 top-8 bottom-8 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent pointer-events-none" aria-hidden="true"></div>
+                <div class="absolute left-1/2 top-10 bottom-8 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent pointer-events-none" aria-hidden="true"></div>
 
                 <!-- CPU -->
                 <div class="flex flex-col items-center gap-3">
                     <div class="text-[11px] font-semibold uppercase tracking-widest text-cpu/80">Computer</div>
-                    <div class="h-40 sm:h-56 flex items-end justify-center">
-                        <div id="cpu-hand-wrap" class="-scale-x-100"><div id="cpu-hand" class="w-28 sm:w-40"></div></div>
+                    <div class="h-36 sm:h-48 flex items-end justify-center">
+                        <div id="cpu-hand-wrap" class="-scale-x-100 animate-rise">
+                            <img id="cpu-hand" src="Zero.jpg" alt="Computer's hand"
+                                 class="w-24 sm:w-32 rounded-2xl bg-white p-1 shadow-card rotate-2 pointer-events-none select-none">
+                        </div>
                     </div>
                     <div id="cpu-num" class="text-xl sm:text-2xl font-semibold text-cpu tabular-nums min-h-[1.5em]">–</div>
                 </div>
@@ -106,6 +122,11 @@
            class="text-center text-sm sm:text-base text-slate-400 min-h-[1.5em] transition-colors duration-300">
             Pick a number to begin your innings.
         </p>
+
+        <!-- Recent balls -->
+        <div aria-label="Recent balls">
+            <div id="history" class="flex justify-center gap-1.5 flex-wrap min-h-[26px]"></div>
+        </div>
 
         <!-- Controls -->
         <section aria-label="Choose a number">
