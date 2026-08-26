@@ -21,6 +21,7 @@ A modern, browser-based hand cricket game built with **Next.js 15**, **React 19*
 4. **Innings 2** — chase the target or defend it. Win, loss (by runs / balls to spare), and tie outcomes are all detected.
 
 ### Gameplay & UX
+- **Three CPU difficulty levels** — Easy plays blind random, Medium picks up on your habits, Hard studies your number frequencies and recent patterns to hunt you down
 - Animated ball sequence: both hands show a fist, bob up and down, then reveal their numbers with a pop
 - Live scoreboard that adapts per phase (Score / Ball / Best → Defending / CPU Score / Target)
 - Recent-balls strip tracking the last 8 deliveries (+runs and OUT chips)
@@ -104,7 +105,8 @@ components/
   ResultOverlay.jsx  # Win/loss/tie modal
   ThemeToggle.jsx    # Dark/light switch
 lib/
-  images.js          # Hand image map, preloading, CPU random picker
+  images.js          # Hand image map + preloading
+  cpu.js             # Difficulty-based CPU bowling brain (pattern reading)
 public/              # Hand images (Zero–Six.jpg)
 ```
 
@@ -119,7 +121,6 @@ Tailwind CSS v4 with CSS-first configuration — colors (`ink`, `you`, `cpu`), s
 ## Roadmap Ideas
 
 - Sound effects with mute toggle
-- Adaptive CPU that learns your number patterns
 - Local two-player hot-seat mode
 - Achievements and career stats page
 - PWA support for offline play

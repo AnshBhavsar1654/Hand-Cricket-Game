@@ -9,7 +9,8 @@ import MenuScreen from "@/components/MenuScreen";
 import NumberPad from "@/components/NumberPad";
 import ResultOverlay from "@/components/ResultOverlay";
 import Toss from "@/components/Toss";
-import { IMAGE_MAP, getComputerChoice } from "@/lib/images";
+import { IMAGE_MAP } from "@/lib/images";
+import { getCpuChoice, DIFFICULTIES } from "@/lib/cpu";
 
 const initialState = {
   mode: null, // 'quick' | 'match'
@@ -38,6 +39,8 @@ const initialState = {
   tossStage: "call", // call | flipping | choice | done
   tossCoin: null, // null | 'heads' | 'tails'
   tossFlipKey: 0,
+  difficulty: "medium", // easy | medium | hard
+  playerPicks: [], // every number the human has played (CPU pattern memory)
 };
 
 export default function Game() {
@@ -56,9 +59,18 @@ export default function Game() {
   };
 
   useEffect(() => {
-    patch({ bestScore: Number(localStorage.getItem("bestScore") || 0) });
+    const savedDiff = localStorage.getItem("hc-difficulty");
+    patch({
+      bestScore: Number(localStorage.getItem("bestScore") || 0),
+      ...(DIFFICULTIES.includes(savedDiff) ? { difficulty: savedDiff } : {}),
+    });
     return () => clearTimeout(timerRef.current);
   }, []);
+
+  const setDifficulty = (difficulty) => {
+    localStorage.setItem("hc-difficulty", difficulty);
+    patch({ difficulty });
+  };
 
   /* ---------- Flow ---------- */
 
@@ -76,6 +88,7 @@ export default function Game() {
       isAnimating: false,
       shaking: false,
       result: null,
+      playerPicks: [],
       lastBall: { text: "\u2013", cls: "text-slate-400" },
       msg: "Choose a game mode to get started.",
       subtitle: "Pick a mode to start playing.",
@@ -144,7 +157,7 @@ export default function Game() {
     if (mode === "match") {
       startToss();
     } else {
-      patch({ mode, innings: 1 });
+      patch({ mode, innings: 1, playerPicks: [] });
       beginInnings("bat");
     }
   };
@@ -164,6 +177,7 @@ export default function Game() {
       result: null,
       isAnimating: false,
       shaking: false,
+      playerPicks: [],
       lastBall: { text: "\u2013", cls: "text-slate-400" },
       tossStage: "call",
       tossCoin: null,
@@ -232,7 +246,8 @@ export default function Game() {
         msg: `Out! You scored ${s.score}. Pick a number to start again.`,
       });
       later(() => {
-        patch({ shaking: false });
+        /* fresh CPU memory for each Quick Bat run */
+        patch({ shaking: false, playerPicks: [] });
         beginInnings("bat");
       }, 2200);
       return;
@@ -406,7 +421,7 @@ export default function Game() {
     const s = ref.current;
     if (s.phase !== "playing" || s.isAnimating) return;
 
-    const cpuChoice = getComputerChoice();
+    const cpuChoice = getCpuChoice(s.playerPicks, s.difficulty);
 
     patch({
       isAnimating: true,
@@ -415,6 +430,7 @@ export default function Game() {
       cpuHandValue: 0,
       playerNumShown: "?",
       cpuNumShown: "?",
+      playerPicks: [...s.playerPicks, userChoice],
       msg: "Hands up\u2026",
     });
 
@@ -503,7 +519,12 @@ export default function Game() {
 
       <main className="w-full max-w-2xl flex flex-col gap-5">
         {state.phase === "menu" ? (
-          <MenuScreen bestScore={state.bestScore} onStart={startGame} />
+          <MenuScreen
+            bestScore={state.bestScore}
+            difficulty={state.difficulty}
+            onDifficultyChange={setDifficulty}
+            onStart={startGame}
+          />
         ) : (
           <>
             <StatsBar stats={stats} />
