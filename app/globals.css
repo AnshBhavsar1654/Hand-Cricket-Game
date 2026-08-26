@@ -35,6 +35,8 @@
   }
 }
 
+/* ---------- Gameplay animations ---------- */
+
 @keyframes bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-28px); }
@@ -44,16 +46,6 @@
   animation: bob 0.5s ease-in-out 2;
 }
 
-@keyframes coin-flip {
-  0% { transform: rotateX(0deg) scale(1); }
-  50% { transform: rotateX(720deg) scale(1.15); }
-  100% { transform: rotateX(1440deg) scale(1); }
-}
-
-.coin-flip {
-  animation: coin-flip 1.4s ease-in-out;
-}
-
 @keyframes floaty {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
@@ -61,4 +53,126 @@
 
 .floaty {
   animation: floaty 3s ease-in-out infinite;
+}
+
+/* ---------- Coin toss ---------- */
+
+.coin-scene {
+  perspective: 1100px;
+}
+
+.coin {
+  position: relative;
+  width: 6.5rem;
+  height: 6.5rem;
+  transform-style: preserve-3d;
+}
+
+@media (min-width: 640px) {
+  .coin {
+    width: 7.5rem;
+    height: 7.5rem;
+  }
+}
+
+.coin-idle {
+  animation: coinIdle 3.2s ease-in-out infinite;
+}
+
+@keyframes coinIdle {
+  0%, 100% { transform: translateY(0) rotateX(0deg); }
+  50% { transform: translateY(-8px) rotateX(12deg); }
+}
+
+/* Arcing flip: rises, spins several times, settles on the winning face */
+.coin-land-heads {
+  animation: coinLandHeads 1.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.coin-land-tails {
+  animation: coinLandTails 1.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes coinLandHeads {
+  0%   { transform: translateY(0)     scale(1)    rotateX(0deg); }
+  18%  { transform: translateY(-70px) scale(1.07) rotateX(720deg); }
+  48%  { transform: translateY(-92px) scale(1.1)  rotateX(1440deg); }
+  78%  { transform: translateY(-44px) scale(1.03) rotateX(1980deg); }
+  92%  { transform: translateY(-6px)  scale(0.99) rotateX(2130deg); }
+  100% { transform: translateY(0)     scale(1)    rotateX(2160deg); }
+}
+
+@keyframes coinLandTails {
+  0%   { transform: translateY(0)     scale(1)    rotateX(0deg); }
+  18%  { transform: translateY(-70px) scale(1.07) rotateX(720deg); }
+  48%  { transform: translateY(-92px) scale(1.1)  rotateX(1440deg); }
+  78%  { transform: translateY(-44px) scale(1.03) rotateX(1980deg); }
+  92%  { transform: translateY(-6px)  scale(0.99) rotateX(2290deg); }
+  100% { transform: translateY(0)     scale(1)    rotateX(2340deg); }
+}
+
+.coin-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 2.25rem;
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 640px) {
+  .coin-face { font-size: 2.6rem; }
+}
+
+.coin-face::after {
+  content: "";
+  position: absolute;
+  inset: 11%;
+  border-radius: 9999px;
+  border: 2px dashed currentColor;
+  opacity: 0.3;
+}
+
+.coin-heads {
+  background: radial-gradient(circle at 32% 26%, #fef3c7, #fbbf24 58%, #b45309 100%);
+  color: #78350f;
+  border: 4px solid #d97706;
+}
+
+.coin-tails {
+  background: radial-gradient(circle at 32% 26%, #f1f5f9, #94a3b8 58%, #334155 100%);
+  color: #1e293b;
+  border: 4px solid #64748b;
+  transform: rotateX(180deg);
+}
+
+.coin-shadow-wrap {
+  margin-top: 1.5rem;
+}
+
+.coin-shadow {
+  width: 5rem;
+  height: 0.85rem;
+  border-radius: 9999px;
+  background: rgb(2 6 23 / 0.3);
+  filter: blur(6px);
+  margin-inline: auto;
+}
+
+.dark .coin-shadow {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.shadow-flip {
+  animation: shadowFlip 1.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@keyframes shadowFlip {
+  0%   { transform: scaleX(1);    opacity: 1; }
+  48%  { transform: scaleX(0.55); opacity: 0.45; }
+  100% { transform: scaleX(1);    opacity: 1; }
 }

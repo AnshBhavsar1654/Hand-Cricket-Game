@@ -37,6 +37,7 @@ const initialState = {
   result: null, // { title, sub }
   tossStage: "call", // call | flipping | choice | done
   tossCoin: null, // null | 'heads' | 'tails'
+  tossFlipKey: 0,
 };
 
 export default function Game() {
@@ -178,21 +179,26 @@ export default function Game() {
   };
 
   const callToss = (side) => {
-    patch({ tossStage: "flipping", msg: `You called ${side}. Coin is spinning\u2026` });
+    /* Decide the outcome up front so the animation can land on the real face */
+    const coin = Math.random() < 0.5 ? "heads" : "tails";
+    patch({
+      tossCoin: coin,
+      tossStage: "flipping",
+      tossFlipKey: ref.current.tossFlipKey + 1,
+      chip: { text: "Flipping\u2026", style: "idle" },
+      msg: `You called ${side}. The coin is in the air\u2026`,
+    });
 
     later(() => {
-      const coin = Math.random() < 0.5 ? "heads" : "tails";
       if (coin === side) {
         patch({
-          tossCoin: coin,
           tossStage: "choice",
           chip: { text: "You Won The Toss", style: "playing" },
-          msg: `${coin === "heads" ? "Heads" : "Tails"}! You won the toss. What will you do?`,
+          msg: `${coin === "heads" ? "Heads" : "Tails"}! You won the toss.`,
         });
       } else {
         const cpuChoice = Math.random() < 0.5 ? "bat" : "bowl";
         patch({
-          tossCoin: coin,
           tossStage: "done",
           msg: `${coin === "heads" ? "Heads" : "Tails"}. CPU won the toss and chose to ${cpuChoice} first.`,
         });
@@ -201,7 +207,7 @@ export default function Game() {
           beginInnings(cpuChoice === "bat" ? "bowl" : "bat");
         }, 2200);
       }
-    }, 1600);
+    }, 2100);
   };
 
   const chooseToss = (choice) => {
@@ -369,16 +375,18 @@ export default function Game() {
       }
     } else {
       const cpuScore = s.cpuScore + cpuChoice;
+      const hasTarget = s.innings === 2;
       patch({
         cpuScore,
         chip: { text: chipText, style: "playing" },
         msg:
           cpuChoice > 0
-            ? `The CPU takes ${cpuChoice} run${cpuChoice > 1 ? "s" : ""}. CPU: ${cpuScore}/${ref.current.target}`
-            : `No run. CPU: ${cpuScore}/${ref.current.target}`,
+            ? `The CPU takes ${cpuChoice} run${cpuChoice > 1 ? "s" : ""}. CPU: ${cpuScore}${hasTarget ? `/${ref.current.target}` : ""}`
+            : `No run. CPU: ${cpuScore}${hasTarget ? `/${ref.current.target}` : ""}`,
       });
 
-      if (cpuScore >= ref.current.target) {
+      /* Only check the chase while actually chasing (innings 2) */
+      if (hasTarget && cpuScore >= ref.current.target) {
         later(() => showResult("loss"), 1400);
       }
     }
@@ -525,7 +533,7 @@ export default function Game() {
             {state.phase !== "toss" && <HistoryStrip history={state.history} />}
 
             {state.phase === "toss" ? (
-              <Toss stage={state.tossStage} coin={state.tossCoin} onCall={callToss} onChoose={chooseToss} />
+              <Toss stage={state.tossStage} coin={state.tossCoin} flipKey={state.tossFlipKey} onCall={callToss} onChoose={chooseToss} />
             ) : (
               <>
                 <NumberPad onPick={playBall} disabled={!controlsEnabled} />
