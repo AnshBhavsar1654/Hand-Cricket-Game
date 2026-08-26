@@ -43,3 +43,13 @@
 .hand-bob {
   animation: bob 0.5s ease-in-out 2;
 }
+
+@keyframes coin-flip {
+  0% { transform: rotateX(0deg) scale(1); }
+  50% { transform: rotateX(720deg) scale(1.15); }
+  100% { transform: rotateX(1440deg) scale(1); }
+}
+
+.coin-flip {
+  animation: coin-flip 1.4s ease-in-out;
+}

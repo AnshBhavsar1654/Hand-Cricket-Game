@@ -8,6 +8,7 @@ import HistoryStrip from "@/components/HistoryStrip";
 import ModeSelect from "@/components/ModeSelect";
 import NumberPad from "@/components/NumberPad";
 import ResultOverlay from "@/components/ResultOverlay";
+import Toss from "@/components/Toss";
 import { IMAGE_MAP, getComputerChoice } from "@/lib/images";
 
 const initialState = {
@@ -34,6 +35,8 @@ const initialState = {
   isAnimating: false,
   shaking: false,
   result: null, // { title, sub }
+  tossStage: "call", // call | flipping | choice | done
+  tossCoin: null, // null | 'heads' | 'tails'
 };
 
 export default function Game() {
@@ -120,21 +123,96 @@ export default function Game() {
         subtitle: `Innings 2 \u2014 CPU needs ${s.target} to win.`,
         chip: { text: `Bowling \u00b7 Ball 1`, style: "playing" },
       });
-    } else {
+    } else if (role === "bat") {
       patch({
         msg: "Pick a number to begin your innings.",
-        subtitle: "Match the computer's number and you're out.",
-        chip: { text: "Batting \u00b7 Ball 1", style: "playing" },
+        subtitle: s.mode === "match" ? "Innings 1 \u2014 you're batting first." : "Match the computer's number and you're out.",
+        chip: { text: `Batting \u00b7 Ball 1`, style: "playing" },
+      });
+    } else {
+      patch({
+        msg: "You're bowling first. Take a wicket to end their innings!",
+        subtitle: "Innings 1 \u2014 the CPU is batting.",
+        chip: { text: `Bowling \u00b7 Ball 1`, style: "playing" },
       });
     }
   };
 
   const startGame = (mode) => {
     clearTimeout(timerRef.current);
-    patch({ mode, innings: 1 });
-    // beginInnings reads ref; ensure mode is set first
-    ref.current.mode = mode;
-    beginInnings("bat");
+    if (mode === "match") {
+      startToss();
+    } else {
+      patch({ mode, innings: 1 });
+      beginInnings("bat");
+    }
+  };
+
+  /* ---------- Toss ---------- */
+
+  const startToss = () => {
+    patch({
+      mode: "match",
+      phase: "toss",
+      innings: 1,
+      score: 0,
+      cpuScore: 0,
+      target: 0,
+      ball: 0,
+      history: [],
+      result: null,
+      isAnimating: false,
+      shaking: false,
+      lastBall: { text: "\u2013", cls: "text-slate-400" },
+      tossStage: "call",
+      tossCoin: null,
+      playerHandValue: 0,
+      cpuHandValue: 0,
+      revealKey: ref.current.revealKey + 1,
+      playerLabel: "You",
+      cpuLabel: "CPU",
+      msg: "Call it in the air!",
+      subtitle: "Full Match \u2014 the toss decides who bats or bowls first.",
+      chip: { text: "The Toss", style: "idle" },
+    });
+  };
+
+  const callToss = (side) => {
+    patch({ tossStage: "flipping", msg: `You called ${side}. Coin is spinning\u2026` });
+
+    later(() => {
+      const coin = Math.random() < 0.5 ? "heads" : "tails";
+      if (coin === side) {
+        patch({
+          tossCoin: coin,
+          tossStage: "choice",
+          chip: { text: "You Won The Toss", style: "playing" },
+          msg: `${coin === "heads" ? "Heads" : "Tails"}! You won the toss. What will you do?`,
+        });
+      } else {
+        const cpuChoice = Math.random() < 0.5 ? "bat" : "bowl";
+        patch({
+          tossCoin: coin,
+          tossStage: "done",
+          msg: `${coin === "heads" ? "Heads" : "Tails"}. CPU won the toss and chose to ${cpuChoice} first.`,
+        });
+        later(() => {
+          ref.current.innings = 1;
+          beginInnings(cpuChoice === "bat" ? "bowl" : "bat");
+        }, 2200);
+      }
+    }, 1600);
+  };
+
+  const chooseToss = (choice) => {
+    patch({
+      tossStage: "done",
+      msg: `You won the toss and chose to ${choice} first.`,
+    });
+    later(() => {
+      ref.current.innings = 1;
+      beginInnings(choice);
+    }, 900);
   };
 
   /* ---------- Out handling ---------- */
@@ -167,6 +245,15 @@ export default function Game() {
         patch({ innings: 2, shaking: false });
         beginInnings("bowl");
       }, 2600);
+      return;
+    }
+
+    /* Innings 2 chase ended with a wicket */
+    if (s.score === s.cpuScore) {
+      showResult("tie");
+    } else {
+      patch({ msg: `All out! You fell ${ref.current.target - s.score} short.` });
+      showResult("loss");
     }
   };
 
@@ -182,15 +269,23 @@ export default function Game() {
     let title, sub;
     if (outcome === "win") {
       title = "Victory!";
-      const margin = s.score - s.cpuScore;
-      sub = `The CPU was bowled out for ${s.cpuScore} \u2014 you win by ${margin} run${margin === 1 ? "" : "s"}.`;
+      if (s.role === "bowl") {
+        const margin = s.score - s.cpuScore;
+        sub = `The CPU was bowled out for ${s.cpuScore} \u2014 you win by ${margin} run${margin === 1 ? "" : "s"}.`;
+      } else {
+        sub = `You chased down ${s.target} in ${s.ball} ball${s.ball === 1 ? "" : "s"}. Victory!`;
+      }
     } else if (outcome === "loss") {
       title = "Defeat";
-      const ballsLeft = Math.max(0, 7 - s.ball);
-      sub =
-        ballsLeft > 0
-          ? `The CPU chased ${s.target} with ${ballsLeft} ball${ballsLeft === 1 ? "" : "s"} to spare.`
-          : `The CPU chased ${s.target} successfully.`;
+      if (s.role === "bat" && s.innings === 2) {
+        sub = `You fell ${s.target - s.score} short \u2014 the CPU defended ${s.cpuScore}.`;
+      } else {
+        const ballsLeft = Math.max(0, 7 - s.ball);
+        sub =
+          ballsLeft > 0
+            ? `The CPU chased ${s.target} with ${ballsLeft} ball${ballsLeft === 1 ? "" : "s"} to spare.`
+            : `The CPU chased ${s.target} successfully.`;
+      }
     } else {
       title = "It's a Tie!";
       sub = `Both sides finished on ${s.score}. What are the odds?`;
@@ -229,7 +324,24 @@ export default function Game() {
         chip: { text: "Wicket!", style: "out" },
         msg: "Howzat! The CPU is bowled out.",
       });
-      later(finishMatchAfterCpuOut, 1600);
+
+      if (s.innings === 1) {
+        /* CPU batted first — set the chase target */
+        const target = s.cpuScore + 1;
+        patch({
+          phase: "break",
+          target,
+          chip: { text: "Innings Break", style: "idle" },
+          msg: `CPU bowled out for ${s.cpuScore}. You need ${target} to win!`,
+          subtitle: "Innings break \u2014 you're batting next.",
+        });
+        later(() => {
+          patch({ innings: 2 });
+          beginInnings("bat");
+        }, 2600);
+      } else {
+        later(finishMatchAfterCpuOut, 1600);
+      }
       return;
     }
 
@@ -240,12 +352,19 @@ export default function Game() {
           score,
           chip: { text: chipText, style: "playing" },
           msg: `${userChoice} run${userChoice > 1 ? "s" : ""}. Score: ${score}`,
+          lastBall: { text: `+${userChoice}`, cls: "text-slate-900 dark:text-white" },
         });
         updateBest(score);
+
+        /* Chasing in innings 2 — win as soon as the target is reached */
+        if (s.innings === 2 && score >= ref.current.target) {
+          later(() => showResult("win"), 1200);
+        }
       } else {
         patch({
           chip: { text: chipText, style: "playing" },
           msg: "Dot ball.",
+          lastBall: { text: "0", cls: "text-slate-400" },
         });
       }
     } else {
@@ -330,7 +449,7 @@ export default function Game() {
   const controlsEnabled = state.phase === "playing" && !state.isAnimating;
 
   let stats;
-  if (state.phase === "menu" || state.phase === "over") {
+  if (state.phase === "menu" || state.phase === "toss" || state.phase === "over") {
     stats = [
       { label: "Score", value: state.phase === "over" ? state.score : 0, cls: "text-slate-900 dark:text-white" },
       { label: "Ball 1", value: "\u2013", cls: "text-slate-400" },
@@ -340,13 +459,21 @@ export default function Game() {
     stats = [
       { label: "Your Score", value: state.score, cls: "text-slate-900 dark:text-white" },
       { label: `Ball ${state.ball + 1}`, value: state.lastBall.text, cls: state.lastBall.cls },
-      { label: "Best", value: state.bestScore, cls: "text-slate-900 dark:text-white" },
+      {
+        label: state.innings === 2 ? "Target" : "Best",
+        value: state.innings === 2 ? state.target : state.bestScore,
+        cls: "text-slate-900 dark:text-white",
+      },
     ];
   } else {
     stats = [
       { label: "Defending", value: state.score, cls: "text-slate-900 dark:text-white" },
       { label: "CPU Score", value: state.cpuScore, cls: "text-cpu" },
-      { label: "Target", value: state.target, cls: "text-slate-900 dark:text-white" },
+      {
+        label: "Target",
+        value: state.innings === 2 ? state.target : "\u2013",
+        cls: "text-slate-900 dark:text-white",
+      },
     ];
   }
 
@@ -395,6 +522,8 @@ export default function Game() {
 
         {state.phase === "menu" ? (
           <ModeSelect onStart={startGame} />
+        ) : state.phase === "toss" ? (
+          <Toss stage={state.tossStage} coin={state.tossCoin} onCall={callToss} onChoose={chooseToss} />
         ) : (
           <>
             <NumberPad onPick={playBall} disabled={!controlsEnabled} />
