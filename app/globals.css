@@ -53,3 +53,12 @@
 .coin-flip {
   animation: coin-flip 1.4s ease-in-out;
 }
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.floaty {
+  animation: floaty 3s ease-in-out infinite;
+}

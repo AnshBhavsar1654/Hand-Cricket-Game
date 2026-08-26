@@ -5,7 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StatsBar from "@/components/StatsBar";
 import Arena from "@/components/Arena";
 import HistoryStrip from "@/components/HistoryStrip";
-import ModeSelect from "@/components/ModeSelect";
+import MenuScreen from "@/components/MenuScreen";
 import NumberPad from "@/components/NumberPad";
 import ResultOverlay from "@/components/ResultOverlay";
 import Toss from "@/components/Toss";
@@ -77,7 +77,7 @@ export default function Game() {
       result: null,
       lastBall: { text: "\u2013", cls: "text-slate-400" },
       msg: "Choose a game mode to get started.",
-      subtitle: "Match the computer's number and you're out.",
+      subtitle: "Pick a mode to start playing.",
       chip: { text: "Ready", style: "idle" },
       playerLabel: "You \u00b7 Batting",
       cpuLabel: "CPU \u00b7 Bowling",
@@ -494,55 +494,59 @@ export default function Game() {
       </header>
 
       <main className="w-full max-w-2xl flex flex-col gap-5">
-        <StatsBar stats={stats} />
-
-        <Arena
-          playerLabel={state.playerLabel}
-          cpuLabel={state.cpuLabel}
-          playerHandSrc={IMAGE_MAP[state.playerHandValue]}
-          cpuHandSrc={IMAGE_MAP[state.cpuHandValue]}
-          playerNum={state.isAnimating ? "?" : state.playerNumShown ?? "\u2013"}
-          cpuNum={state.isAnimating ? "?" : state.cpuNumShown ?? "\u2013"}
-          animating={state.isAnimating}
-          bobKey={state.bobKey}
-          revealKey={state.revealKey}
-          chip={state.chip}
-        />
-
-        {/* Message */}
-        <p
-          role="status"
-          aria-live="polite"
-          className="text-center text-sm sm:text-base text-slate-500 min-h-[1.5em] transition-colors duration-300"
-        >
-          {state.msg}
-        </p>
-
-        <HistoryStrip history={state.history} />
-
         {state.phase === "menu" ? (
-          <ModeSelect onStart={startGame} />
-        ) : state.phase === "toss" ? (
-          <Toss stage={state.tossStage} coin={state.tossCoin} onCall={callToss} onChoose={chooseToss} />
+          <MenuScreen bestScore={state.bestScore} onStart={startGame} />
         ) : (
           <>
-            <NumberPad onPick={playBall} disabled={!controlsEnabled} />
-            <div className="mt-5 flex items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={goToMenu}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-cpu/40 hover:text-cpu hover:bg-cpu/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cpu/40 active:scale-95 dark:border-white/10 dark:bg-ink-800 dark:text-slate-400"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                  <path d="M3 3v5h5" />
-                </svg>
-                Quit to Menu
-              </button>
-            </div>
-            <footer className="mt-4 text-xs text-slate-400 dark:text-slate-600 text-center">
-              Keys 0 &ndash; 6 to play &middot; R to quit &middot; T to toggle theme
-            </footer>
+            <StatsBar stats={stats} />
+
+            <Arena
+              playerLabel={state.playerLabel}
+              cpuLabel={state.cpuLabel}
+              playerHandSrc={IMAGE_MAP[state.playerHandValue]}
+              cpuHandSrc={IMAGE_MAP[state.cpuHandValue]}
+              playerNum={state.isAnimating ? "?" : state.playerNumShown ?? "\u2013"}
+              cpuNum={state.isAnimating ? "?" : state.cpuNumShown ?? "\u2013"}
+              animating={state.isAnimating}
+              bobKey={state.bobKey}
+              revealKey={state.revealKey}
+              chip={state.chip}
+            />
+
+            {/* Message */}
+            <p
+              role="status"
+              aria-live="polite"
+              className="text-center text-sm sm:text-base text-slate-500 min-h-[1.5em] transition-colors duration-300"
+            >
+              {state.msg}
+            </p>
+
+            {state.phase !== "toss" && <HistoryStrip history={state.history} />}
+
+            {state.phase === "toss" ? (
+              <Toss stage={state.tossStage} coin={state.tossCoin} onCall={callToss} onChoose={chooseToss} />
+            ) : (
+              <>
+                <NumberPad onPick={playBall} disabled={!controlsEnabled} />
+                <div className="mt-5 flex items-center justify-center gap-4">
+                  <button
+                    type="button"
+                    onClick={goToMenu}
+                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 cursor-pointer transition-all duration-200 hover:border-cpu/40 hover:text-cpu hover:bg-cpu/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cpu/40 active:scale-95 dark:border-white/10 dark:bg-ink-800 dark:text-slate-400"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
+                    </svg>
+                    Quit to Menu
+                  </button>
+                </div>
+                <footer className="mt-4 text-xs text-slate-400 dark:text-slate-600 text-center">
+                  Keys 0 &ndash; 6 to play &middot; R to quit &middot; T to toggle theme
+                </footer>
+              </>
+            )}
           </>
         )}
       </main>
