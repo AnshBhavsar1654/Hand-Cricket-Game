@@ -8,6 +8,7 @@ import HistoryStrip from "@/components/HistoryStrip";
 import MenuScreen from "@/components/MenuScreen";
 import NumberPad from "@/components/NumberPad";
 import ResultOverlay from "@/components/ResultOverlay";
+import Confetti from "@/components/Confetti";
 import Toss from "@/components/Toss";
 import { IMAGE_MAP } from "@/lib/images";
 import { getCpuChoice, DIFFICULTIES } from "@/lib/cpu";
@@ -36,6 +37,7 @@ const initialState = {
   isAnimating: false,
   shaking: false,
   result: null, // { title, sub }
+  confettiKey: 0,
   tossStage: "call", // call | flipping | choice | done
   tossCoin: null, // null | 'heads' | 'tails'
   tossFlipKey: 0,
@@ -342,6 +344,10 @@ export default function Game() {
         style: outcome === "win" ? "playing" : "out",
       },
     });
+
+    if (outcome === "win") {
+      patch({ confettiKey: ref.current.confettiKey + 1 });
+    }
   };
 
   /* ---------- Ball resolution ---------- */
@@ -397,6 +403,15 @@ export default function Game() {
           lastBall: { text: `+${userChoice}`, cls: "text-slate-900 dark:text-white" },
         });
         updateBest(score);
+
+        /* Confetti: milestone (every 50 runs) or new personal best */
+        const prevScore = s.score;
+        const hitMilestone =
+          Math.floor(prevScore / 50) < Math.floor(score / 50);
+        const hitBest = s.mode === "quick" && score > s.bestScore;
+        if (hitMilestone || hitBest) {
+          patch({ confettiKey: ref.current.confettiKey + 1 });
+        }
 
         /* Chasing in innings 2 — win as soon as the target is reached */
         if (s.innings === 2 && score >= ref.current.target) {
@@ -674,6 +689,8 @@ export default function Game() {
         onRematch={() => startGame(state.mode)}
         onMenu={goToMenu}
       />
+
+      <Confetti trigger={state.confettiKey} />
     </div>
   );
 }
