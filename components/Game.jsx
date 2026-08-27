@@ -29,8 +29,6 @@ const initialState = {
   chip: { text: "Ready", style: "idle" },
   playerLabel: "You \u00b7 Batting",
   cpuLabel: "CPU \u00b7 Bowling",
-  playerLabel: "You \u00b7 Batting",
-  cpuLabel: "CPU \u00b7 Bowling",
   playerHandValue: 0,
   cpuHandValue: 0,
   bobKey: 0,
