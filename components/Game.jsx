@@ -29,6 +29,8 @@ const initialState = {
   chip: { text: "Ready", style: "idle" },
   playerLabel: "You \u00b7 Batting",
   cpuLabel: "CPU \u00b7 Bowling",
+  playerLabel: "You \u00b7 Batting",
+  cpuLabel: "CPU \u00b7 Bowling",
   playerHandValue: 0,
   cpuHandValue: 0,
   bobKey: 0,
@@ -40,6 +42,7 @@ const initialState = {
   tossCoin: null, // null | 'heads' | 'tails'
   tossFlipKey: 0,
   difficulty: "medium", // easy | medium | hard
+  oversLimit: "unlimited", // 'unlimited' | 2 | 5 | 10
   playerPicks: [], // every number the human has played (CPU pattern memory)
 };
 
@@ -60,9 +63,14 @@ export default function Game() {
 
   useEffect(() => {
     const savedDiff = localStorage.getItem("hc-difficulty");
+    const savedOvers = localStorage.getItem("hc-overs");
+    const validOvers = ["unlimited", 2, 5, 10];
     patch({
       bestScore: Number(localStorage.getItem("bestScore") || 0),
       ...(DIFFICULTIES.includes(savedDiff) ? { difficulty: savedDiff } : {}),
+      ...(validOvers.includes(Number(savedOvers)) || savedOvers === "unlimited"
+        ? { oversLimit: savedOvers === "unlimited" ? "unlimited" : Number(savedOvers) }
+        : {}),
     });
     return () => clearTimeout(timerRef.current);
   }, []);
@@ -70,6 +78,11 @@ export default function Game() {
   const setDifficulty = (difficulty) => {
     localStorage.setItem("hc-difficulty", difficulty);
     patch({ difficulty });
+  };
+
+  const setOvers = (oversLimit) => {
+    localStorage.setItem("hc-overs", String(oversLimit));
+    patch({ oversLimit });
   };
 
   /* ---------- Flow ---------- */
@@ -138,14 +151,22 @@ export default function Game() {
         chip: { text: `Bowling \u00b7 Ball 1`, style: "playing" },
       });
     } else if (role === "bat") {
+      const oversHint =
+        s.oversLimit !== "unlimited"
+          ? ` You have ${s.oversLimit * 6} balls (${s.oversLimit} overs).`
+          : "";
       patch({
-        msg: "Pick a number to begin your innings.",
+        msg: `Pick a number to begin your innings.${oversHint}`,
         subtitle: s.mode === "match" ? "Innings 1 \u2014 you're batting first." : "Match the computer's number and you're out.",
         chip: { text: `Batting \u00b7 Ball 1`, style: "playing" },
       });
     } else {
+      const oversHint =
+        s.oversLimit !== "unlimited"
+          ? ` CPU has ${s.oversLimit * 6} balls (${s.oversLimit} overs).`
+          : "";
       patch({
-        msg: "You're bowling first. Take a wicket to end their innings!",
+        msg: `You're bowling first. Take a wicket to end their innings!${oversHint}`,
         subtitle: "Innings 1 \u2014 the CPU is batting.",
         chip: { text: `Bowling \u00b7 Ball 1`, style: "playing" },
       });
@@ -255,11 +276,13 @@ export default function Game() {
 
     if (s.innings === 1) {
       const target = s.score + 1;
+      const oversMsg =
+        s.oversLimit !== "unlimited" ? ` (${s.oversLimit} overs)` : "";
       patch({
         phase: "break",
         target,
         chip: { text: "Innings Break", style: "idle" },
-        msg: `Innings over! You scored ${s.score}. The CPU needs ${target} to win.`,
+        msg: `Innings over! You scored ${s.score}${oversMsg}. The CPU needs ${target} to win.`,
         subtitle: "Innings break \u2014 you're bowling next.",
       });
       later(() => {
@@ -405,6 +428,59 @@ export default function Game() {
         later(() => showResult("loss"), 1400);
       }
     }
+
+    /* --- Overs exhaustion check (limited-overs matches only) --- */
+    if (s.oversLimit !== "unlimited") {
+      const maxBalls = s.oversLimit * 6;
+      if (s.ball >= maxBalls) {
+        later(() => {
+          if (ref.current.phase !== "playing") return;
+
+          if (s.innings === 1) {
+            if (s.role === "bat") {
+              const target = s.score + 1;
+              patch({
+                phase: "break",
+                target,
+                chip: { text: "Innings Break", style: "idle" },
+                msg: `Overs up! You scored ${s.score}. The CPU needs ${target} to win.`,
+                subtitle: "Innings break \u2014 you're bowling next.",
+              });
+              later(() => {
+                patch({ innings: 2 });
+                beginInnings("bowl");
+              }, 2600);
+            } else {
+              const target = s.cpuScore + 1;
+              patch({
+                phase: "break",
+                target,
+                chip: { text: "Innings Break", style: "idle" },
+                msg: `Overs up! CPU scored ${s.cpuScore}. You need ${target} to win!`,
+                subtitle: "Innings break \u2014 you're batting next.",
+              });
+              later(() => {
+                patch({ innings: 2 });
+                beginInnings("bat");
+              }, 2600);
+            }
+          } else {
+            if (s.role === "bat") {
+              if (s.score === s.cpuScore) showResult("tie");
+              else if (s.score > s.cpuScore) showResult("win");
+              else {
+                patch({ msg: `Overs up! You fell ${s.cpuScore - s.score} short.` });
+                showResult("loss");
+              }
+            } else {
+              if (s.cpuScore === s.score) showResult("tie");
+              else if (s.cpuScore > s.score) showResult("loss");
+              else showResult("win");
+            }
+          }
+        }, 1400);
+      }
+    }
   };
 
   const updateBest = (score) => {
@@ -480,9 +556,15 @@ export default function Game() {
       { label: "Best", value: state.bestScore, cls: "text-slate-900 dark:text-white" },
     ];
   } else if (state.role === "bat") {
+    const overDisplay =
+      state.oversLimit !== "unlimited"
+        ? `${Math.floor(state.ball / 6)}.${state.ball % 6}/${state.oversLimit}`
+        : `${state.ball + 1}`;
+    const overLabel =
+      state.oversLimit !== "unlimited" ? `Overs ${overDisplay}` : `Ball ${state.ball + 1}`;
     stats = [
       { label: "Your Score", value: state.score, cls: "text-slate-900 dark:text-white" },
-      { label: `Ball ${state.ball + 1}`, value: state.lastBall.text, cls: state.lastBall.cls },
+      { label: overLabel, value: state.lastBall.text, cls: state.lastBall.cls },
       {
         label: state.innings === 2 ? "Target" : "Best",
         value: state.innings === 2 ? state.target : state.bestScore,
@@ -490,12 +572,18 @@ export default function Game() {
       },
     ];
   } else {
+    const overDisplay =
+      state.oversLimit !== "unlimited"
+        ? `${Math.floor(state.ball / 6)}.${state.ball % 6}/${state.oversLimit}`
+        : `${state.ball + 1}`;
+    const overLabel =
+      state.oversLimit !== "unlimited" ? `Overs ${overDisplay}` : `Ball ${state.ball + 1}`;
     stats = [
       { label: "Defending", value: state.score, cls: "text-slate-900 dark:text-white" },
       { label: "CPU Score", value: state.cpuScore, cls: "text-cpu" },
       {
-        label: "Target",
-        value: state.innings === 2 ? state.target : "\u2013",
+        label: state.innings === 2 ? "Target" : overLabel,
+        value: state.innings === 2 ? state.target : overDisplay,
         cls: "text-slate-900 dark:text-white",
       },
     ];
@@ -523,6 +611,8 @@ export default function Game() {
             bestScore={state.bestScore}
             difficulty={state.difficulty}
             onDifficultyChange={setDifficulty}
+            oversLimit={state.oversLimit}
+            onOversChange={setOvers}
             onStart={startGame}
           />
         ) : (

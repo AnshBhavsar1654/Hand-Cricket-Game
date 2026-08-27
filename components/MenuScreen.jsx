@@ -48,7 +48,21 @@ const STEPS = [
   { n: "3", title: "Match means out", desc: "Equal numbers and you're out. Otherwise, your runs add up." },
 ];
 
-export default function MenuScreen({ bestScore, difficulty, onDifficultyChange, onStart }) {
+const OVERS_OPTIONS = [
+  { value: 2, label: "2" },
+  { value: 5, label: "5" },
+  { value: 10, label: "10" },
+  { value: "unlimited", label: "∞" },
+];
+
+const OVERS_INFO = {
+  2: "12 balls per side — quick fire",
+  5: "30 balls per side — balanced",
+  10: "60 balls per side — tactical",
+  unlimited: "No limit — play until all out",
+};
+
+export default function MenuScreen({ bestScore, difficulty, onDifficultyChange, oversLimit, onOversChange, onStart }) {
   return (
     <>
       {/* Hero */}
@@ -132,6 +146,37 @@ export default function MenuScreen({ bestScore, difficulty, onDifficultyChange, 
           })}
         </div>
         <p className="text-xs text-slate-500">{DIFFICULTY_INFO[difficulty].desc}</p>
+      </section>
+
+      {/* Overs selector */}
+      <section
+        aria-label="Match overs"
+        className="flex flex-col items-center gap-2.5 rounded-2xl bg-white border border-slate-200 shadow-card px-5 py-4 transition-colors duration-300 dark:bg-ink-900 dark:border-white/[0.06] dark:shadow-card-dark"
+      >
+        <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          Match Overs
+        </div>
+        <div className="grid grid-cols-4 gap-1 rounded-full bg-slate-100 border border-slate-200 p-1 w-full max-w-xs dark:bg-ink-800 dark:border-white/10">
+          {OVERS_OPTIONS.map((o) => {
+            const active = oversLimit === o.value;
+            return (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => onOversChange(o.value)}
+                aria-pressed={active}
+                className={`py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-you/50 active:scale-95 ${
+                  active
+                    ? "bg-white text-you shadow-card dark:bg-you/20 dark:text-you-soft"
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+                }`}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-xs text-slate-500">{OVERS_INFO[oversLimit]}</p>
       </section>
 
       {/* Modes */}
